@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5"
-      xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+      xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>User info</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
@@ -12,9 +12,9 @@
     <div class="col bg-dark ">
         <nav class="navbar navbar-light bg-dark">
             <span class="navbar-text text-white">
-                <b> <td th:utext="${user.getEmail()}"></td> </b>
-                <td>with roles:</td>
-                <td th:each="role : ${user.getRoles()}" th:text="${role.getName()}"></td>
+                <b id="currentUserEmail"></b>
+                <span>with roles:</span>
+                <span id="currentUserRoles"></span>
             </span>
             <a class="nav-link text-secondary font-weight-boldt text-right" href="/user/logout">Logout</a>
         </nav>
@@ -22,14 +22,13 @@
 </div>
 
 <div class="row h-100">
-
     <div class="col-2  bg-white list-group">
         <ul class="nav nav-tabs my-2 flex-column nav-pills">
-
-            <li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item">
+            <!-- Показываем Admin вкладку для администраторов -->
+            <li sec:authorize="hasAuthority('ADMIN')" class="nav-item">
                 <a class="nav-link" href="/admin">Admin</a>
             </li>
-
+            <!-- Показываем User вкладку для всех пользователей -->
             <li class="nav-item">
                 <a class="nav-link active" href="/user">User</a>
             </li>
@@ -49,18 +48,20 @@
                                 <table class="table table-striped  ">
                                     <tr>
                                         <th>ID</th>
-                                        <th>Name</th>
+                                        <th>First Name</th>
+                                        <th>Last Name</th>
                                         <th>Age</th>
                                         <th>Email</th>
                                         <th>Role</th>
                                     </tr>
 
-                                    <tr>
-                                        <td th:text="${user.getId()}"></td>
-                                        <td th:text="${user.getUsername()}"></td>
-                                        <td th:text="${user.getAge()}"></td>
-                                        <td th:text="${user.getEmail()}"></td>
-                                        <td th:each="role : ${user.getRoles()}" th:text="${role.getName()}"></td>
+                                    <tr id="userInfoRow">
+                                        <td id="userId"></td>
+                                        <td id="userFirstName"></td>
+                                        <td id="userLastName"></td>
+                                        <td id="userAge"></td>
+                                        <td id="userEmail"></td>
+                                        <td id="userRoles"></td>
                                     </tr>
                                 </table>
                             </div>
@@ -76,6 +77,51 @@
 <script src="/webjars/popper.js/1.14.7/umd/popper.min.js"></script>
 <script src="/webjars/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 <script src="/webjars/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+<script>
+    // Глобальные переменные
+    let currentUser = null;
+
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function () {
+        loadCurrentUser();
+    });
+
+    // Загрузка текущего пользователя
+    async function loadCurrentUser() {
+        try {
+            const response = await fetch('/api/user/current');
+            if (response.ok) {
+                currentUser = await response.json();
+                displayCurrentUser();
+                displayUserInfo();
+            }
+        } catch (error) {
+            console.error('Error loading current user:', error);
+        }
+    }
+
+    // Отображение информации о текущем пользователе в навигации
+    function displayCurrentUser() {
+        if (currentUser) {
+            document.getElementById('currentUserEmail').textContent = currentUser.email;
+            const rolesText = currentUser.roles.join(' ');
+            document.getElementById('currentUserRoles').textContent = rolesText;
+        }
+    }
+
+    // Отображение информации о пользователе в таблице
+    function displayUserInfo() {
+        if (currentUser) {
+            document.getElementById('userId').textContent = currentUser.id;
+            document.getElementById('userFirstName').textContent = currentUser.firstName;
+            document.getElementById('userLastName').textContent = currentUser.lastName;
+            document.getElementById('userAge').textContent = currentUser.age;
+            document.getElementById('userEmail').textContent = currentUser.email;
+            document.getElementById('userRoles').textContent = currentUser.roles.join(', ');
+        }
+    }
+</script>
 
 </body>
 </html>
