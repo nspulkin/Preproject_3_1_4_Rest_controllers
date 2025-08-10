@@ -1,5 +1,6 @@
 package ru.kata.spring.boot_security.demo.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
 
 import javax.persistence.*;
@@ -46,6 +47,7 @@ public class Role implements GrantedAuthority {
         return this.name;  // Возвращаем строковое представление роли
     }
 
+    @JsonIgnore
     public Set<User> getUsers() {
         return users;
     }

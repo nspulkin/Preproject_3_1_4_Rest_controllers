@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>API Test</title>
+</head>
+<body>
+<h1>API Test Page</h1>
+
+<h2>Test Current User</h2>
+<button onclick="testCurrentUser()">Test Current User API</button>
+<div id="currentUserResult"></div>
+
+<h2>Test All Users</h2>
+<button onclick="testAllUsers()">Test All Users API</button>
+<div id="allUsersResult"></div>
+
+<script>
+    async function testCurrentUser() {
+        try {
+            console.log('Testing current user API...');
+            const response = await fetch('/api/user/current');
+            console.log('Response status:', response.status);
+
+            if (response.ok) {
+                const user = await response.json();
+                console.log('Current user data:', user);
+                document.getElementById('currentUserResult').innerHTML =
+                    '<pre>' + JSON.stringify(user, null, 2) + '</pre>';
+            } else {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                document.getElementById('currentUserResult').innerHTML =
+                    '<p style="color: red;">Error: ' + response.status + ' - ' + errorText + '</p>';
+            }
+        } catch (error) {
+            console.error('Error testing current user API:', error);
+            document.getElementById('currentUserResult').innerHTML =
+                '<p style="color: red;">Error: ' + error.message + '</p>';
+        }
+    }
+
+    async function testAllUsers() {
+        try {
+            console.log('Testing all users API...');
+            const response = await fetch('/api/admin/users');
+            console.log('Response status:', response.status);
+
+            if (response.ok) {
+                const users = await response.json();
+                console.log('All users data:', users);
+                document.getElementById('allUsersResult').innerHTML =
+                    '<pre>' + JSON.stringify(users, null, 2) + '</pre>';
+            } else {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                document.getElementById('allUsersResult').innerHTML =
+                    '<p style="color: red;">Error: ' + response.status + ' - ' + errorText + '</p>';
+            }
+        } catch (error) {
+            console.error('Error testing all users API:', error);
+            document.getElementById('allUsersResult').innerHTML =
+                '<p style="color: red;">Error: ' + error.message + '</p>';
+        }
+    }
+</script>
+</body>
+</html>

@@ -104,21 +104,48 @@
     // Отображение информации о текущем пользователе в навигации
     function displayCurrentUser() {
         if (currentUser) {
+            console.log('Displaying current user:', currentUser);
             document.getElementById('currentUserEmail').textContent = currentUser.email;
-            const rolesText = currentUser.roles.join(' ');
+
+            // Безопасная обработка ролей
+            let rolesText = 'No roles';
+            if (currentUser.roles && Array.isArray(currentUser.roles) && currentUser.roles.length > 0) {
+                const roleNames = currentUser.roles.map(role => {
+                    console.log('Processing role:', role);
+                    return role.name || role;
+                });
+                rolesText = roleNames.join(' ');
+            }
+            console.log('Roles text:', rolesText);
             document.getElementById('currentUserRoles').textContent = rolesText;
+        } else {
+            console.log('No current user to display');
         }
     }
 
     // Отображение информации о пользователе в таблице
     function displayUserInfo() {
         if (currentUser) {
+            console.log('Displaying user info:', currentUser);
             document.getElementById('userId').textContent = currentUser.id;
             document.getElementById('userFirstName').textContent = currentUser.firstName;
             document.getElementById('userLastName').textContent = currentUser.lastName;
             document.getElementById('userAge').textContent = currentUser.age;
             document.getElementById('userEmail').textContent = currentUser.email;
-            document.getElementById('userRoles').textContent = currentUser.roles.join(', ');
+
+            // Безопасная обработка ролей
+            let rolesText = 'No roles';
+            if (currentUser.roles && Array.isArray(currentUser.roles) && currentUser.roles.length > 0) {
+                const roleNames = currentUser.roles.map(role => {
+                    console.log('Processing role for user info:', role);
+                    return role.name || role;
+                });
+                rolesText = roleNames.join(', ');
+            }
+            console.log('User info roles text:', rolesText);
+            document.getElementById('userRoles').textContent = rolesText;
+        } else {
+            console.log('No current user to display info for');
         }
     }
 </script>

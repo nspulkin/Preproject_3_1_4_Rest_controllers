@@ -72,6 +72,7 @@
                                     </tr>
                                     </thead>
                                     <tbody id="usersTableBody">
+                                    <!-- JavaScript will populate this table -->
                                     </tbody>
                                 </table>
                             </div>
@@ -240,9 +241,22 @@
     // Отображение информации о текущем пользователе
     function displayCurrentUser() {
         if (currentUser) {
+            console.log('Displaying current user:', currentUser);
             document.getElementById('currentUserEmail').textContent = currentUser.email;
-            const rolesText = currentUser.roles.map(role => role.name).join(' ');
+
+            // Безопасная обработка ролей
+            let rolesText = 'No roles';
+            if (currentUser.roles && Array.isArray(currentUser.roles) && currentUser.roles.length > 0) {
+                const roleNames = currentUser.roles.map(role => {
+                    console.log('Processing role:', role);
+                    return role.name || role;
+                });
+                rolesText = roleNames.join(' ');
+            }
+            console.log('Roles text:', rolesText);
             document.getElementById('currentUserRoles').textContent = rolesText;
+        } else {
+            console.log('No current user to display');
         }
     }
 
@@ -256,9 +270,20 @@
             if (response.ok) {
                 allUsers = await response.json();
                 console.log('Received users:', allUsers);
+
+                // Проверяем структуру каждого пользователя
+                allUsers.forEach((user, index) => {
+                    console.log(`User ${index}:`, user);
+                    if (user.roles) {
+                        console.log(`User ${index} roles:`, user.roles);
+                    }
+                });
+
                 displayUsers();
             } else {
                 console.error('Failed to load users, status:', response.status);
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
             }
         } catch (error) {
             console.error('Error loading users:', error);
@@ -271,33 +296,45 @@
         const tbody = document.getElementById('usersTableBody');
         tbody.innerHTML = '';
 
-        if (allUsers.length === 0) {
+        if (!allUsers || allUsers.length === 0) {
             console.log('No users to display');
             tbody.innerHTML = '<tr><td colspan="8" class="text-center">No users found</td></tr>';
             return;
         }
 
-        allUsers.forEach(user => {
-            console.log('Processing user:', user);
+        allUsers.forEach((user, index) => {
+            console.log(`Processing user ${index}:`, user);
+
+            // Безопасная обработка ролей
+            let rolesText = 'No roles';
+            if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
+                const roleNames = user.roles.map(role => {
+                    console.log(`Role for user ${index}:`, role);
+                    return role.name || role;
+                });
+                rolesText = roleNames.join(', ');
+            }
+            console.log(`Roles text for user ${index}:`, rolesText);
+
             const row = document.createElement('tr');
             row.innerHTML = `
-            <td>${user.id}</td>
-            <td>${user.firstName}</td>
-            <td>${user.lastName}</td>
-            <td>${user.age}</td>
-            <td>${user.email}</td>
-            <td>${user.roles.join(', ')}</td>
-            <td>
-                <button type="button" class="btn btn-primary btn-sm" onclick="editUser(${user.id})">
-                    Edit
-                </button>
-            </td>
-            <td>
-                <button type="button" class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">
-                    Delete
-                </button>
-            </td>
-        `;
+                <td>${user.id || 'N/A'}</td>
+                <td>${user.firstName || 'N/A'}</td>
+                <td>${user.lastName || 'N/A'}</td>
+                <td>${user.age || 'N/A'}</td>
+                <td>${user.email || 'N/A'}</td>
+                <td>${rolesText}</td>
+                <td>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="editUser(${user.id})">
+                        Edit
+                    </button>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">
+                        Delete
+                    </button>
+                </td>
+            `;
             tbody.appendChild(row);
         });
     }
@@ -355,9 +392,11 @@
     // Редактирование пользователя
     async function editUser(userId) {
         try {
+            console.log('Editing user with ID:', userId);
             const response = await fetch(`/api/admin/users/${userId}`);
             if (response.ok) {
                 const user = await response.json();
+                console.log('User data for edit:', user);
 
                 document.getElementById('editUserId').value = user.id;
                 document.getElementById('editFirstName').value = user.firstName;
@@ -368,11 +407,27 @@
 
                 // Сбрасываем и устанавливаем роли
                 const roleSelect = document.getElementById('editRoles');
+                const userRoleNames = [];
+
+                if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
+                    user.roles.forEach(role => {
+                        console.log('Processing role for edit:', role);
+                        const roleName = role.name || role;
+                        userRoleNames.push(roleName);
+                    });
+                }
+
+                console.log('User role names for edit:', userRoleNames);
+
                 Array.from(roleSelect.options).forEach(option => {
-                    option.selected = user.roles.includes(option.value);
+                    option.selected = userRoleNames.includes(option.value);
                 });
 
                 $('#editModal').modal('show');
+            } else {
+                console.error('Failed to load user for edit, status:', response.status);
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
             }
         } catch (error) {
             console.error('Error loading user for edit:', error);

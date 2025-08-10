@@ -12,6 +12,7 @@ import ru.kata.spring.boot_security.demo.models.User;
 import ru.kata.spring.boot_security.demo.repositories.RoleRepository;
 import ru.kata.spring.boot_security.demo.repositories.UserRepository;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -32,29 +33,74 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<User> index() {
-        System.out.println("=== Getting all users from repository ===");
-        List<User> users = userRepository.findAll();
-        System.out.println("Repository returned " + users.size() + " users");
+        try {
+            System.out.println("=== UserServiceImpl.index() called ===");
+            List<User> users = userRepository.findAll();
+            System.out.println("Found " + users.size() + " users from repository");
 
-        // Принудительно загружаем роли для каждого пользователя
-        for (User user : users) {
-            user.getRoles().size(); // Это загрузит роли
-            System.out.println("User from repository: ID=" + user.getId() + ", Email=" + user.getEmail() +
-                    ", Roles=" + user.getRoles().size());
+            // Загружаем роли для каждого пользователя, чтобы избежать проблем с ленивой загрузкой
+            for (int i = 0; i < users.size(); i++) {
+                User user = users.get(i);
+                System.out.println("Processing user " + i + ": " + user.getEmail());
+
+                if (user.getRoles() != null) {
+                    System.out.println("  User " + i + " roles before initialization: " + user.getRoles().size());
+                    user.getRoles().size(); // Это загрузит роли
+                    System.out.println("  User " + i + " roles after initialization: " + user.getRoles().size());
+
+                    // Проверяем каждую роль
+                    user.getRoles().forEach(role -> {
+                        System.out.println("    Role: " + role.getName() + " (ID: " + role.getId() + ")");
+                    });
+                } else {
+                    System.out.println("  User " + i + " has no roles");
+                }
+            }
+
+            return users;
+        } catch (Exception e) {
+            System.err.println("Error getting users: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-        return users;
     }
 
     @Override
     @Transactional(readOnly = true)
     public User show(int id) {
-        Optional<User> user = userRepository.findById(id);
-        if (user.isPresent()) {
-            User userEntity = user.get();
-            userEntity.getRoles().size(); // Это загрузит роли
-            return userEntity;
+        try {
+            if (id <= 0) {
+                throw new IllegalArgumentException("Invalid user ID");
+            }
+            System.out.println("=== UserServiceImpl.show() called for ID: " + id + " ===");
+
+            Optional<User> user = userRepository.findById(id);
+            if (user.isPresent()) {
+                User userEntity = user.get();
+                System.out.println("Found user: " + userEntity.getEmail());
+
+                if (userEntity.getRoles() != null) {
+                    System.out.println("  User roles before initialization: " + userEntity.getRoles().size());
+                    userEntity.getRoles().size(); // Это загрузит роли
+                    System.out.println("  User roles after initialization: " + userEntity.getRoles().size());
+
+                    // Проверяем каждую роль
+                    userEntity.getRoles().forEach(role -> {
+                        System.out.println("    Role: " + role.getName() + " (ID: " + role.getId() + ")");
+                    });
+                } else {
+                    System.out.println("  User has no roles");
+                }
+
+                return userEntity;
+            }
+            System.out.println("No user found with ID: " + id);
+            return null;
+        } catch (Exception e) {
+            System.err.println("Error getting user by ID: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-        return null;
     }
 
     @Override
@@ -88,7 +134,6 @@ public class UserServiceImpl implements UserService {
         userRepository.deleteById(id);
     }
 
-
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findByEmail(String email) {
@@ -99,15 +144,32 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // Теперь ищем только по email, так как убрали поле name
+        System.out.println("=== UserServiceImpl.loadUserByUsername() called for username: " + username + " ===");
+
         Optional<User> user = userRepository.findByEmail(username);
 
         if (user.isEmpty()) {
+            System.out.println("No user found with email: " + username);
             throw new UsernameNotFoundException("User not found with email: " + username);
         }
 
         // Инициализируем роли для избежания проблем с ленивой загрузкой
         User userEntity = user.get();
-        userEntity.getRoles().size(); // Это загрузит роли
+        System.out.println("Found user: " + userEntity.getEmail());
+
+        if (userEntity.getRoles() != null) {
+            System.out.println("  User roles before initialization: " + userEntity.getRoles().size());
+            userEntity.getRoles().size(); // Это загрузит роли
+            System.out.println("  User roles after initialization: " + userEntity.getRoles().size());
+
+            // Проверяем каждую роль
+            userEntity.getRoles().forEach(role -> {
+                System.out.println("    Role: " + role.getName() + " (ID: " + role.getId() + ")");
+            });
+        } else {
+            System.out.println("  User has no roles");
+        }
+
         return userEntity;
     }
 
@@ -121,8 +183,21 @@ public class UserServiceImpl implements UserService {
             Optional<User> user = findByEmail(currentUsername);
             if (user.isPresent()) {
                 User userEntity = user.get();
-                userEntity.getRoles().size(); // Это загрузит роли
                 System.out.println("Found current user: " + userEntity.getEmail());
+
+                if (userEntity.getRoles() != null) {
+                    System.out.println("  Current user roles before initialization: " + userEntity.getRoles().size());
+                    userEntity.getRoles().size(); // Это загрузит роли
+                    System.out.println("  Current user roles after initialization: " + userEntity.getRoles().size());
+
+                    // Проверяем каждую роль
+                    userEntity.getRoles().forEach(role -> {
+                        System.out.println("    Role: " + role.getName() + " (ID: " + role.getId() + ")");
+                    });
+                } else {
+                    System.out.println("  Current user has no roles");
+                }
+
                 return userEntity;
             }
 
@@ -162,6 +237,36 @@ public class UserServiceImpl implements UserService {
             e.printStackTrace();
             throw e;
         }
+    }
+
+    @Override
+    @Transactional
+    public User createUserWithRoles(String firstName, String lastName, String password, int age, String email, Set<String> roleNames) {
+        System.out.println("=== UserServiceImpl.createUserWithRoles called ===");
+
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be null or empty");
+        }
+
+        // Проверяем, что пользователь с таким email не существует
+        if (findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("User with email '" + email + "' already exists");
+        }
+
+        // Создаем нового пользователя
+        User user = new User();
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setAge(age);
+        user.setEmail(email);
+        user.setPassword(password);
+
+        // Обрабатываем роли
+        Set<Role> userRoles = processRoleNames(roleNames);
+        user.setRoles(userRoles);
+
+        // Создаем пользователя через RegistrationService
+        return createUser(user);
     }
 
     @Override
@@ -216,6 +321,22 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public User updateUserWithRoles(int id, String firstName, String lastName, String password, int age, String email, Set<String> roleNames) {
+        System.out.println("=== UserServiceImpl.updateUserWithRoles called ===");
+
+        if (id <= 0 || email == null) {
+            throw new IllegalArgumentException("Invalid parameters");
+        }
+
+        // Обрабатываем роли
+        Set<Role> userRoles = processRoleNames(roleNames);
+
+        // Вызываем основной метод обновления
+        return updateUser(id, firstName, lastName, password, email, age, userRoles);
+    }
+
+    @Override
+    @Transactional
     public void deleteUser(int id) {
         if (id <= 0) {
             throw new IllegalArgumentException("Invalid user ID");
@@ -225,6 +346,131 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("User not found");
         }
         delete(id);
+    }
+
+    @Override
+    @Transactional
+    public Set<Role> processRoleNames(Set<String> roleNames) {
+        Set<Role> userRoles = new HashSet<>();
+
+        if (roleNames != null && !roleNames.isEmpty()) {
+            for (String roleName : roleNames) {
+                if (roleName != null && !roleName.trim().isEmpty()) {
+                    Role existingRole = roleRepository.findByName(roleName).orElseGet(() -> roleRepository.save(new Role(roleName)));
+                    userRoles.add(existingRole);
+                }
+            }
+        }
+
+        // Если роли не выбраны, устанавливаем роль USER по умолчанию
+        if (userRoles.isEmpty()) {
+            Role defaultRole = roleRepository.findByName("USER").orElseGet(() -> roleRepository.save(new Role("USER")));
+            userRoles.add(defaultRole);
+        }
+
+        return userRoles;
+    }
+
+    // Методы для REST API
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> getAllUsersForApi() {
+        try {
+            System.out.println("=== Getting all users for API ===");
+            List<User> users = index();
+            System.out.println("Found " + users.size() + " users");
+            return users;
+        } catch (Exception e) {
+            System.err.println("Error getting users for API: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public User getUserByIdForApi(int id) {
+        try {
+            System.out.println("=== Getting user by ID for API: " + id + " ===");
+            User user = show(id);
+            if (user == null) {
+                throw new IllegalArgumentException("User not found with ID: " + id);
+            }
+            return user;
+        } catch (Exception e) {
+            System.err.println("Error getting user by ID for API: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public User createUserForApi(String firstName, String lastName, String password, int age, String email, Set<String> roleNames) {
+        try {
+            System.out.println("=== Creating user for API ===");
+            System.out.println("Email: " + email);
+            System.out.println("First Name: " + firstName);
+            System.out.println("Last Name: " + lastName);
+            System.out.println("Age: " + age);
+            System.out.println("Roles: " + roleNames);
+
+            if (password == null || password.trim().isEmpty()) {
+                throw new IllegalArgumentException("Password cannot be null or empty");
+            }
+
+            return createUserWithRoles(firstName, lastName, password, age, email, roleNames);
+        } catch (Exception e) {
+            System.err.println("Error creating user for API: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public User updateUserForApi(int id, String firstName, String lastName, String password, int age, String email, Set<String> roleNames) {
+        try {
+            System.out.println("=== Updating user for API ===");
+            System.out.println("User ID: " + id);
+            System.out.println("Email: " + email);
+            System.out.println("Password provided: " + (password != null && !password.trim().isEmpty()));
+
+            return updateUserWithRoles(id, firstName, lastName, password, age, email, roleNames);
+        } catch (Exception e) {
+            System.err.println("Error updating user for API: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteUserForApi(int id) {
+        try {
+            System.out.println("=== Deleting user for API: " + id + " ===");
+            deleteUser(id);
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error deleting user for API: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Role> getAllRolesForApi() {
+        try {
+            System.out.println("=== Getting all roles for API ===");
+            List<Role> roles = roleRepository.findAll();
+            System.out.println("Found " + roles.size() + " roles");
+            return roles;
+        } catch (Exception e) {
+            System.err.println("Error getting roles for API: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 }
 

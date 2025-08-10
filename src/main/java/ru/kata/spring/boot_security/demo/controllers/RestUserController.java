@@ -2,10 +2,7 @@ package ru.kata.spring.boot_security.demo.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import ru.kata.spring.boot_security.demo.dto.UserDto;
 import ru.kata.spring.boot_security.demo.models.User;
 import ru.kata.spring.boot_security.demo.services.UserService;
 
@@ -22,28 +19,34 @@ public class RestUserController {
     }
 
     @GetMapping("/current")
-    public ResponseEntity<UserDto> getCurrentUser() {
+    public ResponseEntity<User> getCurrentUser() {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String email = authentication.getName();
-
-            User currentUser = userService.findByEmail(email).orElse(null);
+            System.out.println("=== RestUserController.getCurrentUser called ===");
+            User currentUser = userService.getCurrentUser();
             if (currentUser != null) {
-                return ResponseEntity.ok(new UserDto(currentUser));
+                System.out.println("Current user found: " + currentUser.getEmail());
+                System.out.println("Roles count: " + (currentUser.getRoles() != null ? currentUser.getRoles().size() : "null"));
+                if (currentUser.getRoles() != null) {
+                    currentUser.getRoles().forEach(role -> System.out.println("  Role: " + role.getName()));
+                }
+                return ResponseEntity.ok(currentUser);
             } else {
+                System.out.println("No current user found");
                 return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
+            System.err.println("Error in getCurrentUser: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(500).build();
         }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDto> getUserById(@PathVariable int id) {
+    public ResponseEntity<User> getUserById(@PathVariable int id) {
         try {
-            User user = userService.show(id);
+            User user = userService.getUserByIdForApi(id);
             if (user != null) {
-                return ResponseEntity.ok(new UserDto(user));
+                return ResponseEntity.ok(user);
             } else {
                 return ResponseEntity.notFound().build();
             }
